@@ -1,4 +1,5 @@
-import React, {useState, useEffect, useRef} from "react";
+import React, {useEffect, useReducer} from "react";
+import Reducer from "../../reducer";
 
 const setDefaultValue = () => {
     const userCount = localStorage.getItem('count');
@@ -7,22 +8,13 @@ const setDefaultValue = () => {
 };
 
 const Timer = () => {
-    const [count, setCount] = useState(setDefaultValue());
-    const [isCounting, setIsCounting] = useState(false);
-    const timerIdRef = useRef(null)
-
-    const timerStart = () => {
-        setIsCounting(true);
-    };
-
-    const timerStop = () => {
-        setIsCounting(false);
-    };
-
-    const timerReset = () => {
-        setCount(0);
-        setIsCounting(false);
-    };
+    const [{isCounting, count}, dispatch] =
+        useReducer(Reducer,
+        {
+                isCount: false,
+                count: setDefaultValue(),
+            }
+        );
 
     // componentDidUpdate
     useEffect(() => {
@@ -31,32 +23,43 @@ const Timer = () => {
 
     // запускаем setInterval или останавливаем его
     useEffect(() => {
+        let timerIdRef = null;
          if (isCounting) {
-             timerIdRef.current = setInterval(() => {
-                 setCount((prevCount) => prevCount + 1);
+             timerIdRef = setInterval(() => {
+                 dispatch({type: 'SET_COUNT'});
              }, 1000);
          }
 
         //componentWillUnmount
         return () => {
-            timerIdRef.current && clearInterval(timerIdRef.current);
-            timerIdRef.current = null;
+            timerIdRef && clearInterval(timerIdRef);
+            timerIdRef = null;
         };
     }, [isCounting]);
 
 
     return(
-        <div className="timer">
-            <h2>React Timer</h2>
-            <h3>{count}</h3>
-            {!isCounting ? (
-                <button onClick={timerStart}>Start</button>
-            ) : (
-                <button onClick={timerStop}>Stop</button>
-            )}
-            <button onClick={timerReset}>Reset</button>
-        </div>
+        <View
+            count={count}
+            isCounting={isCounting}
+            dispatch={dispatch}
+        />
     )
 };
 
 export default Timer;
+
+const View = ({count, isCounting, dispatch}) => {
+    return(
+        <div className="timer">
+            <h2>React Timer</h2>
+            <h3>{count}</h3>
+            {!isCounting ? (
+                <button onClick={() => dispatch({type: 'START_TIMER'})}>Start</button>
+            ) : (
+                <button onClick={() => dispatch({type: 'STOP_TIMER'})}>Stop</button>
+            )}
+            <button onClick={() => dispatch({type: 'RESET_TIMER'})}>Reset</button>
+        </div>
+    )
+};
